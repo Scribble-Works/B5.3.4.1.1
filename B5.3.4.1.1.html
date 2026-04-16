@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssignmentX Math Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wood-brown: #5d4037;
+            --wood-grain: #795548; 
+            --mathly-blue: #00d2ff;
+            --mathly-yellow: #fbc531;
+            --mathly-red: #e84118;
+            --mathly-green: #2ecc71;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --rope-color: #a1887f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(rgba(10, 25, 47, 0.4), rgba(10, 25, 47, 0.4)), url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bg-canvas { position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.25; }
+
+        .character-img {
+            position: absolute; 
+            z-index: 5; 
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+            animation: float 3.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        #panda-main { width: 220px; top: -60px; right: -100px; --r: 12deg; transform: rotate(var(--r)); }
+        #mouse-main { width: 200px; top: -50px; left: -100px; --r: -12deg; transform: rotate(var(--r)); }
+
+        @keyframes float { 
+            0%, 100% { transform: translateY(0) rotate(var(--r)); } 
+            50% { transform: translateY(-15px) rotate(var(--r)); } 
+        }
+
+        .game-area-container {
+            display: none; 
+            width: 92%; 
+            max-width: 440px;
+            z-index: 10;
+            position: relative;
+            animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding-top: 40px; 
+        }
+
+        .active { display: block; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .wood-title-banner {
+            background: linear-gradient(135deg, var(--wood-grain) 0%, var(--wood-brown) 100%);
+            border: 4px solid #3e2723;
+            border-radius: 15px 50px 20px 45px; 
+            padding: 18px 25px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4), inset 0 2px 8px rgba(255,255,255,0.1);
+            margin-bottom: 35px; 
+            position: relative;
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center -100vh;
+            animation: sway 6s ease-in-out infinite;
+        }
+
+        .wood-title-banner::before, .wood-title-banner::after {
+            content: ''; position: absolute; top: -100vh; width: 8px; height: 100vh; 
+            background: repeating-linear-gradient(0deg, var(--rope-color), var(--rope-color) 5px, #8d6e63 10px);
+            border-radius: 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.3); z-index: -1;
+        }
+        .wood-title-banner::before { left: 40px; }
+        .wood-title-banner::after { right: 40px; }
+
+        @keyframes sway { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+
+        .banner-logo {
+            width: 60px; height: 60px; object-fit: contain; position: absolute;
+            left: 20px; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+        }
+
+        .wood-title-banner h2 {
+            font-size: 1.2rem; color: #fff9c4; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 1px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); margin-left: 55px;
+        }
+
+        .card { 
+            width: 100%; background: var(--glass-white); backdrop-filter: blur(12px); 
+            border: 6px solid var(--wood-brown); border-radius: 40px; 
+            padding: 25px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); 
+            position: relative; z-index: 12;
+        }
+
+        .mission-header { background: var(--wood-brown); color: white; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+        .btn-green { width: 100%; padding: 16px; border: none; border-radius: 20px; background: var(--mathly-green); color: white; font-weight: 900; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #27ae60; margin-bottom: 5px; transition: transform 0.1s; }
+        .btn-green:active { transform: translateY(4px); box-shadow: 0 2px 0 #27ae60; }
+        
+        .btn-tool { flex: 1; background: white; border: 2px solid var(--wood-brown); color: var(--wood-brown); padding: 12px 5px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
+        .btn-exit { border-color: var(--mathly-red) !important; color: var(--mathly-red) !important; }
+        .tool-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; width: 100%; }
+        
+        .timer-container { width: 100%; height: 14px; background: #eee; border-radius: 10px; margin-bottom: 12px; overflow: hidden; border: 2px solid #ddd; }
+        #timer-bar { width: 100%; height: 100%; background: var(--mathly-red); transition: width 1s linear; }
+        
+        /* Grid UI */
+        .grid-frame { 
+            background: white; 
+            border: 3px solid #d7ccc8; 
+            border-radius: 15px; 
+            margin: 10px 0; 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            grid-template-rows: repeat(5, 1fr);
+            gap: 2px;
+            aspect-ratio: 1;
+            padding: 5px;
+            position: relative;
+        }
+        .grid-cell { 
+            background: #f5f5f5; 
+            border-radius: 4px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 1.2rem;
+        }
+        .grid-cell.start { background: #d1f2eb; border: 2px solid var(--mathly-green); }
+        .grid-cell.target { background: #fdf2e9; border: 2px solid var(--mathly-yellow); }
+
+        .compass-ui {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 0.6rem;
+            border: 1px solid var(--wood-brown);
+        }
+
+        .key-badge { background: #fff9c4; border: 2px dashed #fbc02d; padding: 10px; border-radius: 12px; font-weight: 900; color: #856404; font-size: 0.9rem; margin-bottom: 12px; }
+        .question-box { background: white; border-left: 10px solid var(--mathly-blue); padding: 15px; text-align: left; font-size: 0.9rem; font-weight: 800; border-radius: 0 20px 20px 0; }
+        
+        .direction-controls {
+            display: grid;
+            grid-template-areas: ". north ." "west . east" ". south .";
+            gap: 10px;
+            margin: 15px 0;
+            width: 150px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn-dir {
+            padding: 10px;
+            border: 3px solid var(--wood-brown);
+            border-radius: 12px;
+            background: white;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-dir:active { background: var(--mathly-blue); color: white; transform: scale(0.9); }
+
+        .level-map { display: flex; justify: center; gap: 8px; margin-top: 20px; justify-content: center; }
+        .lvl-dot { width: 45px; height: 45px; border-radius: 14px; background: white; border: 3px solid #d7ccc8; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; font-size: 1.1rem; }
+        .lvl-dot.active-lvl { background: var(--mathly-yellow); color: white; border-color: #f9a825; }
+        .lvl-dot.locked { opacity: 0.4; cursor: not-allowed; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 35px; border: 6px solid var(--wood-brown); width: 85%; max-width: 380px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="scr-start" class="game-area-container active">
+        <img src="mouse.png" id="mouse-main" class="character-img" alt="Mouse">
+        <img src="panda.png" id="panda-main" class="character-img" alt="Panda">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="mission-header"><h1 style="font-size: 1.2rem; text-transform: uppercase; font-weight: 900;">Geometry and Measurement: Geometric Reasoning</h1></div>
+            <p style="font-weight: 800; color: var(--wood-brown); margin-bottom: 25px; font-size: 1rem;">B5.3.4.1.1: Tell the position and motion of objects in space using the cardinal points north, south, east and west.</p>
+            <button class="btn-green" onclick="startMission()">BEGIN MISSION</button>
+            <div class="tool-row">
+                <button class="btn-tool" onclick="toggleModal(true)">Game Rules</button>
+                <button class="btn-tool btn-mute" onclick="toggleAudio()">🔊 SFX: ON</button>
+                <button class="btn-tool" style="color:var(--mathly-red)" onclick="resetData()">RESET</button>
+            </div>
+            <div class="level-map" id="map-ui"></div>
+        </div>
+    </div>
+
+    <div id="scr-game" class="game-area-container">
+        <img src="mouse.png" id="mouse-main" class="character-img" alt="Mouse">
+        <img src="panda.png" id="panda-main" class="character-img" alt="Panda">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="timer-container"><div id="timer-bar"></div></div>
+            <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.85rem; margin-bottom: 12px; color: var(--wood-brown);">
+                <div>SYNC: <span id="score">0</span></div>
+                <div id="lvl-indicator">LEVEL 1</div>
+                <div>⏳ <span id="timer-text">30</span>s</div>
+            </div>
+            
+            <div class="grid-frame" id="grid-ui">
+                <div class="compass-ui">N<br>W+E<br>S</div>
+            </div>
+
+            <div class="question-box" id="question-ui">Navigate the scout to the goal!</div>
+            
+            <div class="direction-controls">
+                <button class="btn-dir" style="grid-area: north" onclick="move('N')">N</button>
+                <button class="btn-dir" style="grid-area: west" onclick="move('W')">W</button>
+                <button class="btn-dir" style="grid-area: east" onclick="move('E')">E</button>
+                <button class="btn-dir" style="grid-area: south" onclick="move('S')">S</button>
+            </div>
+
+            <div id="feedback" style="height: 25px; margin-top: 12px; font-weight: 900; font-size: 0.95rem;"></div>
+            <div class="tool-row">
+                <button class="btn-tool" onclick="getHint()">💡 HINT</button>
+                <button class="btn-tool btn-exit" onclick="exitToMenu()">🚪 EXIT</button>
+                <button class="btn-tool btn-mute" onclick="toggleAudio()">🔊 SFX: ON</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-end" class="game-area-container">
+        <div class="card">
+            <h1 id="end-status" style="font-size: 1.8rem; margin-bottom: 15px; font-weight: 900; color: var(--wood-brown);">MISSION COMPLETE</h1>
+            <div style="font-size: 5rem; font-weight: 900; color: var(--mathly-yellow); line-height: 1;" id="final-score">0</div>
+            <p id="end-msg" style="font-weight: 800; margin: 20px 0; color: var(--wood-brown); font-size: 1.1rem;"></p>
+            <button class="btn-green" onclick="location.reload()">RETURN TO BASE</button>
+        </div>
+    </div>
+
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--wood-brown); margin-bottom: 20px; font-weight: 900; font-size: 1.4rem;">MAP LEGEND</h2>
+            <ul style="text-align: left; font-size: 0.95rem; line-height: 1.8; font-weight: 700; list-style: none; margin-bottom: 25px;">
+                <li>⬆️ <span style="color:var(--mathly-red)">NORTH:</span> Move Up</li>
+                <li>⬇️ <span style="color:var(--mathly-blue)">SOUTH:</span> Move Down</li>
+                <li>➡️ <span style="color:var(--mathly-green)">EAST:</span> Move Right</li>
+                <li>⬅️ <span style="color:var(--mathly-yellow)">WEST:</span> Move Left</li>
+            </ul>
+            <button class="btn-green" onclick="toggleModal(false)">CONFIRMED</button>
+        </div>
+    </div>
+
+    <script>
+        const audio = { bg: new Audio("BGMSound.mp3"), correct: new Audio("correctanswer.mp3"), wrong: new Audio("wronganswer.mp3") };
+        audio.bg.loop = true;
+        let isMuted = false;
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            document.querySelectorAll('.btn-mute').forEach(b => b.innerText = isMuted ? "🔇 SFX: OFF" : "🔊 SFX: ON");
+            if(isMuted) audio.bg.pause(); else audio.bg.play().catch(()=>{});
+        }
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let symbols = [];
+        const MATHLY_COLORS = ["#e84118", "#fbc531", "#2ecc71", "#00d2ff"]; 
+
+        function initBG() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            symbols = Array.from({length: 40}, () => ({
+                x: Math.random()*canvas.width, 
+                y: Math.random()*canvas.height,
+                char: ['↑','↓','→','←','N','S','E','W'][Math.floor(Math.random()*8)],
+                size: Math.random()*20 + 20, 
+                speed: Math.random()*1.0 + 0.5, 
+                color: MATHLY_COLORS[Math.floor(Math.random()*4)]
+            }));
+        }
+        function drawBG() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            symbols.forEach(s => {
+                ctx.fillStyle = s.color; ctx.font = `900 ${s.size}px Inter`;
+                ctx.fillText(s.char, s.x, s.y);
+                s.y += s.speed; 
+                if(s.y > canvas.height + 50) s.y = -50;
+            });
+            requestAnimationFrame(drawBG);
+        }
+        initBG(); drawBG();
+
+        // Game State
+        let storageKey = 'tek_cardinal_b5';
+        let progress = JSON.parse(localStorage.getItem(storageKey)) || { unlocked: [1] };
+        let state = { 
+            score: 0, 
+            qIdx: 1, 
+            currentLvl: 1, 
+            playerPos: {x: 0, y: 0}, 
+            targetPos: {x: 0, y: 0},
+            timer: null,
+            gridSize: 5
+        };
+
+        function startMission() {
+            if(!isMuted) audio.bg.play().catch(()=>{});
+            document.getElementById('scr-start').classList.remove('active');
+            document.getElementById('scr-game').classList.add('active');
+            state.score = 0; state.qIdx = 1;
+            document.getElementById('score').innerText = '0';
+            generateChallenge();
+        }
+
+        function generateChallenge() {
+            const gridUi = document.getElementById('grid-ui');
+            gridUi.innerHTML = '<div class="compass-ui">N<br>W+E<br>S</div>';
+            
+            // Randomly position player and target
+            state.playerPos = { x: Math.floor(Math.random()*5), y: Math.floor(Math.random()*5) };
+            do {
+                state.targetPos = { x: Math.floor(Math.random()*5), y: Math.floor(Math.random()*5) };
+            } while (state.playerPos.x === state.targetPos.x && state.playerPos.y === state.targetPos.y);
+
+            // Level Logic
+            if(state.currentLvl === 1) {
+                document.getElementById('question-ui').innerText = "Reach the Goal! Which direction should you move first?";
+            } else if(state.currentLvl === 2) {
+                document.getElementById('question-ui').innerText = "Strategic Move: Use the cardinal points to navigate.";
+            } else {
+                document.getElementById('question-ui').innerText = "Expert Navigator: Pathfind to the target location.";
+            }
+
+            renderGrid();
+            runTimer();
+        }
+
+        function renderGrid() {
+            const gridUi = document.getElementById('grid-ui');
+            // Remove existing cells but keep compass
+            const cells = gridUi.querySelectorAll('.grid-cell');
+            cells.forEach(c => c.remove());
+
+            for(let y=0; y<5; y++) {
+                for(let x=0; x<5; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    if(x === state.playerPos.x && y === state.playerPos.y) {
+                        cell.innerText = '🐼';
+                        cell.classList.add('start');
+                    } else if(x === state.targetPos.x && y === state.targetPos.y) {
+                        cell.innerText = '🚩';
+                        cell.classList.add('target');
+                    }
+                    gridUi.appendChild(cell);
+                }
+            }
+        }
+
+        function move(dir) {
+            let nextPos = {...state.playerPos};
+            if(dir === 'N') nextPos.y--;
+            if(dir === 'S') nextPos.y++;
+            if(dir === 'E') nextPos.x++;
+            if(dir === 'W') nextPos.x--;
+
+            if(nextPos.x >= 0 && nextPos.x < 5 && nextPos.y >= 0 && nextPos.y < 5) {
+                state.playerPos = nextPos;
+                renderGrid();
+                checkWin();
+            } else {
+                document.getElementById('feedback').innerText = "OUT OF BOUNDS!";
+                document.getElementById('feedback').style.color = "var(--mathly-red)";
+                if(!isMuted) audio.wrong.play();
+            }
+        }
+
+        function checkWin() {
+            if(state.playerPos.x === state.targetPos.x && state.playerPos.y === state.targetPos.y) {
+                clearInterval(state.timer);
+                state.score += 10;
+                document.getElementById('score').innerText = state.score;
+                document.getElementById('feedback').innerText = "✓ TARGET REACHED!";
+                document.getElementById('feedback').style.color = "var(--mathly-green)";
+                if(!isMuted) audio.correct.play();
+                
+                setTimeout(() => {
+                    if(state.qIdx < 5) {
+                        state.qIdx++;
+                        generateChallenge();
+                    } else {
+                        endGame();
+                    }
+                }, 1000);
+            }
+        }
+
+        function runTimer() {
+            clearInterval(state.timer);
+            let t = 30;
+            state.timer = setInterval(() => {
+                t--;
+                document.getElementById('timer-text').innerText = t;
+                document.getElementById('timer-bar').style.width = (t/30)*100 + "%";
+                if(t <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(state.timer);
+            document.getElementById('scr-game').classList.remove('active');
+            document.getElementById('scr-end').classList.add('active');
+            document.getElementById('final-score').innerText = state.score;
+            const msg = document.getElementById('end-msg');
+            if(state.score >= 40) {
+                msg.innerText = "Navigator Success! You know your cardinal points.";
+                if(state.currentLvl < 4 && !progress.unlocked.includes(state.currentLvl + 1)) {
+                    progress.unlocked.push(state.currentLvl + 1);
+                    localStorage.setItem(storageKey, JSON.stringify(progress));
+                }
+            } else { msg.innerText = "Keep practicing! Remember: North is up, East is right."; }
+        }
+
+        function renderMap() {
+            const mapUi = document.getElementById('map-ui');
+            mapUi.innerHTML = '';
+            for(let i=1; i<=4; i++) {
+                const unlocked = progress.unlocked.includes(i);
+                const dot = document.createElement('div');
+                dot.className = `lvl-dot ${unlocked ? '' : 'locked'} ${state.currentLvl === i ? 'active-lvl' : ''}`;
+                dot.innerText = unlocked ? i : '🔒';
+                if(unlocked) dot.onclick = () => { state.currentLvl = i; renderMap(); };
+                mapUi.appendChild(dot);
+            }
+            document.getElementById('lvl-indicator').innerText = `LEVEL ${state.currentLvl}`;
+        }
+        renderMap();
+
+        function getHint() {
+            let hX = state.targetPos.x > state.playerPos.x ? "East" : (state.targetPos.x < state.playerPos.x ? "West" : "");
+            let hY = state.targetPos.y > state.playerPos.y ? "South" : (state.targetPos.y < state.playerPos.y ? "North" : "");
+            document.getElementById('feedback').innerText = `HINT: Head ${hY} ${hX}`;
+            document.getElementById('feedback').style.color = "var(--mathly-yellow)";
+        }
+
+        function toggleModal(s) { document.getElementById('rules-modal').style.display = s ? 'flex' : 'none'; }
+        function resetData() { if(confirm("Reset mission progress?")) { localStorage.removeItem(storageKey); location.reload(); } }
+        function exitToMenu() { location.reload(); }
+        window.addEventListener('resize', initBG);
+    </script>
+</body>
+</html>
